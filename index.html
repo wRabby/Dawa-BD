@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dawa অ্যাডমিন প্যানেল</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --brand:#1E6FD9; --navy:#0E3F86; --deep:#08254F; --bg:#F3F6FB; --text:#101828; --sub:#475467; --mute:#667085; --line:#E4EAF3; --green:#027A48; --red:#B42318; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Hind Siliguri', system-ui, sans-serif; }
+  .wrap { display: flex; flex-wrap: wrap; min-height: 100vh; }
+  aside { flex: 1 1 220px; max-width: 260px; background: linear-gradient(180deg, var(--navy), var(--deep)); color: #fff; padding: 24px 16px; display: flex; flex-direction: column; gap: 6px; }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 20px; }
+  .logo { width: 42px; height: 42px; border-radius: 13px; background: #fff; display: flex; align-items: center; justify-content: center; }
+  .brand b { font-family: 'Outfit', sans-serif; font-size: 22px; display: block; line-height: 1; }
+  .brand small { opacity: .75; }
+  aside .who { margin-top: auto; font-size: 13px; opacity: .8; padding: 8px; word-break: break-all; }
+  aside button { text-align: left; border: none; border-radius: 14px; padding: 12px 14px; font: inherit; font-size: 15px; color: #fff; background: transparent; cursor: pointer; min-height: 46px; }
+  aside button.on { background: rgba(255,255,255,.16); font-weight: 700; }
+  main { flex: 999 1 640px; min-width: 0; padding: 26px clamp(14px, 3vw, 36px); display: flex; flex-direction: column; gap: 18px; }
+  h1 { margin: 0; font-size: 26px; }
+  .muted { color: var(--mute); font-size: 14px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+  .card { background: #fff; border-radius: 20px; padding: 18px; box-shadow: 0 6px 18px rgba(16,40,80,.05); }
+  .stat .label { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--sub); font-weight: 600; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .stat .val { font-family: 'Outfit', sans-serif; font-size: 34px; font-weight: 800; line-height: 1.15; }
+  .row2 { display: flex; flex-wrap: wrap; gap: 14px; }
+  .row2 > .card { flex: 1 1 320px; }
+  .bar { height: 8px; border-radius: 4px; background: #EEF2F7; overflow: hidden; margin-top: 4px; }
+  .bar span { display: block; height: 8px; border-radius: 4px; }
+  .occ { margin-bottom: 10px; font-size: 14px; }
+  .occ div:first-child { display: flex; justify-content: space-between; }
+  .chart { display: flex; align-items: flex-end; gap: 10px; height: 170px; padding-top: 10px; }
+  .chart .c { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%; font-size: 12px; color: var(--mute); }
+  .chart .b { width: 100%; max-width: 34px; border-radius: 8px 8px 4px 4px; background: #BBD3F7; }
+  .tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+  .search { flex: 1 1 260px; display: flex; align-items: center; gap: 8px; height: 46px; border: 1.5px solid #D0D9E6; border-radius: 14px; padding: 0 12px; background: #F8FAFD; }
+  .search input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font: inherit; font-size: 15px; }
+  .pill { border: 1.5px solid #D0D9E6; background: #fff; color: #344054; border-radius: 12px; padding: 0 14px; height: 42px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .pill.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .tbl { overflow-x: auto; }
+  table { width: 100%; min-width: 860px; border-collapse: collapse; font-size: 14.5px; }
+  th { text-align: left; color: var(--mute); font-size: 13px; font-weight: 600; padding: 10px 8px; }
+  td { padding: 11px 8px; border-top: 1px solid #EEF2F7; vertical-align: middle; }
+  .badge { font-size: 12.5px; font-weight: 700; border-radius: 10px; padding: 3px 10px; white-space: nowrap; }
+  .b-on { background: #ECFDF3; color: var(--green); } .b-off { background: #F2F4F7; color: var(--sub); } .b-block { background: #FEF3F2; color: var(--red); }
+  .act { min-height: 40px; border-radius: 12px; padding: 0 14px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+  .act.block { border: 1.5px solid #F04438; background: #fff; color: var(--red); }
+  .act.unblock { border: 1.5px solid #12B76A; background: #12B76A; color: #fff; }
+  .act.del { border: none; background: transparent; color: var(--mute); font-weight: 600; }
+  .center { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .login { max-width: 460px; width: 100%; text-align: center; }
+  .btn { height: 50px; border: none; border-radius: 14px; background: var(--brand); color: #fff; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; padding: 0 22px; }
+  textarea { width: 100%; min-height: 170px; border: 1.5px solid #D0D9E6; border-radius: 14px; padding: 12px; font-family: monospace; font-size: 13px; }
+  .err { color: var(--red); font-weight: 600; margin-top: 10px; white-space: pre-line; }
+  .hidden { display: none !important; }
+  .page { display: flex; flex-direction: column; gap: 18px; }
+  label.f { display: block; font-weight: 600; font-size: 14px; margin: 10px 0 4px; }
+  .f input, .f textarea { width: 100%; }
+  input.box { width: 100%; height: 46px; border: 1.5px solid #D0D9E6; border-radius: 12px; padding: 0 12px; font: inherit; }
+</style>
+</head>
+<body>
+
+<!-- 1) Firebase settings (once per browser) -->
+<div id="setup" class="center hidden">
+  <div class="card login">
+    <div class="logo" style="margin: 0 auto 12px; width: 60px; height: 60px; border-radius: 18px; background: #EAF2FE"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.5" y="8" width="19" height="8" rx="4" fill="#fff" stroke="#1E6FD9" stroke-width="1.6" transform="rotate(-35 12 12)"></rect></svg></div>
+    <h1>Dawa অ্যাডমিন — প্রথমবার সেটআপ</h1>
+    <p class="muted">Firebase Console → Project settings → Your apps → Web app → <b>firebaseConfig</b> অংশটা এখানে পেস্ট করুন। এটা শুধু এই ব্রাউজারে সেভ থাকবে।</p>
+    <textarea id="cfg" placeholder='{ apiKey: "...", authDomain: "...", projectId: "...", appId: "..." }'></textarea>
+    <div style="margin-top: 12px"><button class="btn" id="saveCfg">সেভ করুন</button></div>
+    <div class="err" id="cfgErr"></div>
+  </div>
+</div>
+
+<!-- 2) Admin sign-in -->
+<div id="signin" class="center hidden">
+  <div class="card login">
+    <div class="logo" style="margin: 0 auto 12px; width: 60px; height: 60px; border-radius: 18px; background: #EAF2FE"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.5" y="8" width="19" height="8" rx="4" fill="#fff" stroke="#1E6FD9" stroke-width="1.6" transform="rotate(-35 12 12)"></rect></svg></div>
+    <h1>Dawa অ্যাডমিন প্যানেল</h1>
+    <p class="muted">শুধু অ্যাডমিনের Google অ্যাকাউন্ট দিয়ে ঢোকা যাবে।</p>
+    <button class="btn" id="google">Google দিয়ে লগইন</button>
+    <div class="err" id="signErr"></div>
+    <p><button class="act del" id="resetCfg">Firebase সেটিং আবার দিন</button></p>
+  </div>
+</div>
+
+<!-- 3) Panel -->
+<div id="panel" class="wrap hidden">
+  <aside>
+    <div class="brand"><span class="logo"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.5" y="8" width="19" height="8" rx="4" fill="#E8F0FC" stroke="#1E6FD9" stroke-width="1.6" transform="rotate(-35 12 12)"></rect></svg></span><span><b>Dawa</b><small>অ্যাডমিন প্যানেল</small></span></div>
+    <button class="on" data-page="users">ইউজার</button>
+    <button data-page="stats">হিসাব</button>
+    <div class="who" id="who"></div>
+    <button id="out">লগআউট</button>
+  </aside>
+  <main>
+    <div>
+      <h1 id="pageTitle">ইউজার</h1>
+      <div class="muted">কে কে অ্যাপ ব্যবহার করছে, কে সক্রিয় — আর দরকার হলে ব্লক করুন। সব তথ্য সাথে সাথে আপডেট হয়।</div>
+    </div>
+    <div class="stats" id="stats"></div>
+
+    <div id="p-stats" class="page hidden">
+      <div class="row2">
+        <div class="card"><b>পেশা অনুযায়ী</b><div id="occ" style="margin-top: 12px"></div></div>
+        <div class="card"><b>শেষবার অ্যাপ খুলেছে — গত ৭ দিন</b><div class="chart" id="chart"></div></div>
+      </div>
+      <div class="card"><b>নতুন রেজিস্ট্রেশন — গত ৭ দিন</b><div class="chart" id="chart2"></div></div>
+    </div>
+
+    <div id="p-users" class="card">
+      <div class="tools">
+        <label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475467" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg><input id="q" placeholder="নাম, নাম্বার বা প্রতিষ্ঠান দিয়ে খুঁজুন" aria-label="ইউজার খুঁজুন"></label>
+        <button class="pill on" data-f="all">সব</button>
+        <button class="pill" data-f="today">আজ সক্রিয়</button>
+        <button class="pill" data-f="week">৭ দিনে সক্রিয়</button>
+        <button class="pill" data-f="blocked">ব্লক করা</button>
+      </div>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>নাম</th><th>নাম্বার</th><th>পেশা</th><th>প্রতিষ্ঠান</th><th>রেজিস্টার</th><th>শেষ খুলেছে</th><th>অবস্থা</th><th></th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div id="none" class="muted hidden" style="padding: 18px; text-align: center">কোনো ইউজার মেলেনি</div>
+    </div>
+  </main>
+</div>
+
+<script>
+const ADMIN_EMAIL = 'mdrasel666699990@gmail.com';
+const OCC = { 'Doctor': 'ডাক্তার', 'Intern doctor': 'ইন্টার্ন ডাক্তার', 'Medical student': 'মেডিকেল ছাত্র', 'MATS student': 'MATS ছাত্র', 'Nurse': 'নার্স', 'Nursing student': 'নার্সিং ছাত্র', 'Pharmacist': 'ফার্মাসিস্ট', 'Pharmacy owner': 'ফার্মেসি মালিক', 'Pharmaceutical professional': 'ফার্মাসিউটিক্যাল কর্মী', 'SACMO': 'SACMO', 'Other': 'অন্যান্য' };
+const COLORS = ['#1E6FD9', '#6941C6', '#0E7C66', '#C11574', '#C4320A', '#027A48', '#B42318', '#475467'];
+const $ = (id) => document.getElementById(id);
+const bn = (s) => String(s).replace(/[0-9]/g, (d) => '০১২৩৪৫৬৭৮৯'[d]);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let users = [], filter = 'all', unsub = null, db = null;
+
+function show(id) { ['setup', 'signin', 'panel'].forEach((x) => $(x).classList.toggle('hidden', x !== id)); }
+
+function parseCfg(text) {
+  const m = text.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error('firebaseConfig পাওয়া যায়নি');
+  const obj = {};
+  m[0].replace(/(\w+)\s*:\s*["']([^"']+)["']/g, (_, k, v) => { obj[k] = v; });
+  if (!obj.apiKey || !obj.projectId) throw new Error('apiKey বা projectId নেই');
+  return obj;
+}
+
+function start() {
+  const saved = localStorage.getItem('dawaCfg');
+  if (!saved) { show('setup'); return; }
+  try { firebase.initializeApp(JSON.parse(saved)); } catch (e) { localStorage.removeItem('dawaCfg'); show('setup'); return; }
+  db = firebase.firestore();
+  firebase.auth().onAuthStateChanged((u) => {
+    if (unsub) { unsub(); unsub = null; }
+    if (!u) { show('signin'); return; }
+    if ((u.email || '').toLowerCase() !== ADMIN_EMAIL) {
+      $('signErr').textContent = u.email + ' — এই অ্যাকাউন্ট অ্যাডমিন না।';
+      firebase.auth().signOut(); return;
+    }
+    $('who').textContent = u.email;
+    show('panel');
+    unsub = db.collection('dawa_users').onSnapshot((snap) => {
+      users = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+      draw();
+    }, (e) => { alert('পড়া গেল না: ' + e.message + '\n\nFirestore rules ঠিক আছে কি না দেখুন।'); });
+  });
+}
+
+$('saveCfg').onclick = () => {
+  try { localStorage.setItem('dawaCfg', JSON.stringify(parseCfg($('cfg').value))); location.reload(); }
+  catch (e) { $('cfgErr').textContent = e.message; }
+};
+$('resetCfg').onclick = () => { localStorage.removeItem('dawaCfg'); location.reload(); };
+$('google').onclick = () => {
+  $('signErr').textContent = '';
+  firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch((e) => {
+    $('signErr').textContent = e.code === 'auth/unauthorized-domain'
+      ? 'এই ওয়েবসাইটের ঠিকানা Firebase-এ যোগ করা নেই।\nAuthentication → Settings → Authorized domains-এ wrabby.github.io যোগ করুন।'
+      : e.message;
+  });
+};
+$('out').onclick = () => firebase.auth().signOut();
+document.querySelectorAll('[data-page]').forEach((b) => b.onclick = () => {
+  document.querySelectorAll('[data-page]').forEach((x) => x.classList.toggle('on', x === b));
+  const p = b.dataset.page;
+  $('pageTitle').textContent = p === 'users' ? 'ইউজার' : 'হিসাব';
+  $('p-users').classList.toggle('hidden', p !== 'users');
+  $('p-stats').classList.toggle('hidden', p !== 'stats');
+});
+document.querySelectorAll('[data-f]').forEach((b) => b.onclick = () => {
+  filter = b.dataset.f;
+  document.querySelectorAll('[data-f]').forEach((x) => x.classList.toggle('on', x === b));
+  draw();
+});
+$('q').oninput = draw;
+
+function dayStart(offset) { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - offset); return d.getTime(); }
+function ago(t) {
+  if (!t) return '—';
+  const m = Math.floor((Date.now() - t) / 60000);
+  if (m < 2) return 'এইমাত্র';
+  if (m < 60) return bn(m) + ' মিনিট আগে';
+  const h = Math.floor(m / 60);
+  if (h < 24) return bn(h) + ' ঘণ্টা আগে';
+  const d = Math.floor(h / 24);
+  return d === 1 ? 'গতকাল' : bn(d) + ' দিন আগে';
+}
+function date(t) { if (!t) return '—'; const d = new Date(t); return bn(d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear()); }
+
+function draw() {
+  const today = dayStart(0), week = dayStart(6);
+  const total = users.length;
+  const tA = users.filter((u) => (u.lastSeen || 0) >= today).length;
+  const wA = users.filter((u) => (u.lastSeen || 0) >= week).length;
+  const bl = users.filter((u) => u.blocked).length;
+  const newW = users.filter((u) => (u.created || 0) >= week).length;
+  const pct = (n) => total ? Math.round(n / total * 100) : 0;
+  const stats = [
+    ['মোট ইউজার', total, '+' + bn(newW) + ' এই ৭ দিনে', '#1E6FD9'],
+    ['আজ সক্রিয়', tA, 'মোটের ' + bn(pct(tA)) + '%', '#12B76A'],
+    ['৭ দিনে সক্রিয়', wA, 'মোটের ' + bn(pct(wA)) + '%', '#6941C6'],
+    ['ব্লক করা', bl, 'অ্যাপ খুলতে পারবে না', '#F04438']
+  ];
+  $('stats').innerHTML = stats.map((s) => `<div class="card stat"><div class="label"><span class="dot" style="background:${s[3]}"></span>${s[0]}</div><div class="val">${bn(s[1])}</div><div class="muted">${s[2]}</div></div>`).join('');
+
+  // occupation
+  const occ = {};
+  users.forEach((u) => { const k = OCC[u.occ] || u.occ || 'অন্যান্য'; occ[k] = (occ[k] || 0) + 1; });
+  const occRows = Object.entries(occ).sort((a, b) => b[1] - a[1]);
+  const maxO = Math.max(1, ...occRows.map((r) => r[1]));
+  $('occ').innerHTML = occRows.map((r, i) => `<div class="occ"><div><span>${esc(r[0])}</span><b>${bn(r[1])}</b></div><div class="bar"><span style="width:${Math.round(r[1] / maxO * 100)}%;background:${COLORS[i % COLORS.length]}"></span></div></div>`).join('') || '<span class="muted">এখনো কেউ নেই</span>';
+
+  const days = ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহ', 'শুক্র', 'শনি'];
+  const chart = (el, field) => {
+    const vals = [];
+    for (let i = 6; i >= 0; i--) {
+      const a = dayStart(i), b = a + 86400000;
+      vals.push([days[new Date(a).getDay()], users.filter((u) => (u[field] || 0) >= a && (u[field] || 0) < b).length]);
+    }
+    const mx = Math.max(1, ...vals.map((v) => v[1]));
+    $(el).innerHTML = vals.map((v, i) => `<div class="c"><b style="color:#475467">${bn(v[1])}</b><div class="b" style="height:${Math.max(4, Math.round(v[1] / mx * 120))}px;${i === 6 ? 'background:#1E6FD9' : ''}"></div>${v[0]}</div>`).join('');
+  };
+  chart('chart', 'lastSeen');
+  chart('chart2', 'created');
+
+  // users table
+  const q = $('q').value.trim().toLowerCase();
+  const list = users.filter((u) => {
+    if (filter === 'today' && (u.lastSeen || 0) < today) return false;
+    if (filter === 'week' && (u.lastSeen || 0) < week) return false;
+    if (filter === 'blocked' && !u.blocked) return false;
+    return !q || [u.name, u.phone, u.org, u.email].some((x) => String(x || '').toLowerCase().includes(q));
+  }).sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
+  $('none').classList.toggle('hidden', list.length > 0);
+  $('rows').innerHTML = list.map((u) => {
+    const st = u.blocked ? ['ব্লক', 'b-block'] : (u.lastSeen || 0) >= week ? ['সক্রিয়', 'b-on'] : ['নিষ্ক্রিয়', 'b-off'];
+    return `<tr>
+      <td><b>${esc(u.name)}</b><div class="muted" style="font-size:12.5px">${esc(u.email || '')}</div></td>
+      <td style="font-family:Outfit,sans-serif">${esc(u.phone || u.id)}</td>
+      <td>${esc(OCC[u.occ] || u.occ || '')}</td>
+      <td style="color:#475467">${esc(u.org || '')}</td>
+      <td style="color:#475467">${date(u.created)}</td>
+      <td style="color:#475467">${ago(u.lastSeen)}</td>
+      <td><span class="badge ${st[1]}">${st[0]}</span></td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="act ${u.blocked ? 'unblock' : 'block'}" data-block="${esc(u.id)}">${u.blocked ? 'আনব্লক' : 'ব্লক'}</button>
+        <button class="act del" data-del="${esc(u.id)}">মুছুন</button>
+      </td></tr>`;
+  }).join('');
+  document.querySelectorAll('[data-block]').forEach((b) => b.onclick = () => {
+    const u = users.find((x) => x.id === b.dataset.block);
+    db.collection('dawa_users').doc(u.id).update({ blocked: !u.blocked }).catch((e) => alert(e.message));
+  });
+  document.querySelectorAll('[data-del]').forEach((b) => b.onclick = () => {
+    const u = users.find((x) => x.id === b.dataset.del);
+    if (confirm(u.name + ' (' + u.id + ') — এই অ্যাকাউন্ট মুছে ফেলবেন? সে আবার নতুন করে রেজিস্টার করতে পারবে।')) {
+      db.collection('dawa_users').doc(u.id).delete().catch((e) => alert(e.message));
+    }
+  });
+}
+
+start();
+</script>
+</body>
+</html>
