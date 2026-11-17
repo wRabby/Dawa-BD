@@ -21,7 +21,5 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: Dawa build ${{ github.run_number }}
-          files: |
-            Dawa.apk
-            Dawa.aab
+          name: Dawa BD build ${{ github.run_number }}
+          files: dist/*
