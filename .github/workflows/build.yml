@@ -22,4 +22,6 @@ jobs:
         with:
           tag_name: build-${{ github.run_number }}
           name: Dawa build ${{ github.run_number }}
-          files: Dawa.apk
+          files: |
+            Dawa.apk
+            Dawa.aab
